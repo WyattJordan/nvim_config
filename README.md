@@ -1,6 +1,8 @@
 
 ## Installation
+```
 [ -d ~/.config/nvim ] && mv ~/.config/nvim ~/.config/nvim.orig; git clone https://github.com/WyattJordan/nvim_config.git ~/.config/nvim
+```
 
 ## Powered by 💤 LazyVim
 
