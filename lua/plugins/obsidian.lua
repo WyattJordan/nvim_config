@@ -1,3 +1,24 @@
+--[[
+                     E471: Argument required
+                         Failed to run `config` for obsidian.nvim
+
+...share/nvim/lazy/obsidian.nvim/lua/obsidian/workspace.lua:208: ENOENT: no such file or directory
+
+# stacktrace:
+  - /obsidian.nvim/lua/obsidian/workspace.lua:208 _in_ **setup**
+  - /obsidian.nvim/lua/obsidian/init.lua:62 _in_ **setup**
+  - ~/.config/nvim/lua/config/lazy.lua:17
+  - ~/.config/nvim/init.lua:2
+                      legacy_commands is deprecated, use move from commands like `ObsidianBacklinks` to `Obsidian backlinks`
+and set `opts.legacy_commands` to false to get rid of this warning.
+see https://github.com/obsidian-nvim/obsidian.nvim/wiki/Commands for details.
+     instead.
+Feature will be removed in obsidian.nvim 4.0
+                      follow_url_func is deprecated, use vim.ui.open, see https://github.com/obsidian-nvim/obsidian.nvim/wiki/Attachment instead.
+Feature will be removed in obsidian.nvim 3.16
+
+--]]
+
 local function create_note_id_func(template_name)
   return function(title)
     local suffix = ""
@@ -62,7 +83,7 @@ return {
   opts = {
     -- This override works but not enabling it as all notes should use a template
     -- notes not using a template will be in the root folder (ugly)
-    -- notes_subdir = "notes",
+    notes_subdir = "notes",
     workspaces = {
       {
         name = "personal",
@@ -84,27 +105,28 @@ return {
         }, 
       }, --]]
     },
-    follow_url_func = function(url)
-      vim.fn.jobstart({ "open", url }) -- Mac OS
-    end,
+    legacy_commands = false,
+    -- follow_url_func = function(url)
+    --   vim.fn.jobstart({ "open", url }) -- Mac OS
+    -- end,
     note_id_func = create_note_id_func("raw"),
   },
   keys = {
-    { "<leader>on", "<cmd>ObsidianNewFromTemplate<cr>", desc = "New Templated note" },
-    { "<leader>oN", "<cmd>ObsidianNew<cr>", desc = "New Raw note" },
-    { "<leader>oo", "<cmd>ObsidianOpen<cr>", desc = "Open Obsidian App" },
-    { "<leader>os", "<cmd>ObsidianSearch<cr>", desc = "Search Obsidian" },
-    { "<leader>ob", "<cmd>ObsidianBacklinks<cr>", desc = "Show backlinks" },
-    { "<leader>ot", "<cmd>ObsidianToday<cr>", desc = "Open Today's note" },
-    { "<leader>oT", "<cmd>ObsidianTomorrow<cr>", desc = "Open Tomorrow's note" },
-    { "<leader>ov", "<cmd>ObsidianTags<cr>", desc = "Open Tags" },
-    { "<leader>oy", "<cmd>ObsidianYesterday<cr>", desc = "Open yesterday's note" },
-    { "<leader>om", "<cmd>ObsidianTemplate<cr>", desc = "Insert template" },
-    { "<leader>ol", "<cmd>ObsidianLink<cr>", desc = "Create/Edit link" },
-    { "<leader>of", "<cmd>ObsidianFollowLink<cr>", desc = "Follow link" },
-    { "<leader>oq", "<cmd>ObsidianQuickSwitch<cr>", desc = "Quick switch" },
-    { "<leader>oe", "<cmd>ObsidianExtractNote<cr>", desc = "Extract Note" },
-    { "<leader>oi", "<cmd>ObsidianPasteImg<cr>", desc = "Paste Image" },
+    { "<leader>oN", "<cmd>Obsidian new_from_template<cr>", desc = "New Templated note" },
+    { "<leader>on", "<cmd>Obsidian new<cr>", desc = "New Raw note" },
+    { "<leader>oo", "<cmd>Obsidian open<cr>", desc = "Open Obsidian App" },
+    { "<leader>os", "<cmd>Obsidian search<cr>", desc = "Search Obsidian" },
+    { "<leader>ob", "<cmd>Obsidian backlinks<cr>", desc = "Show backlinks" },
+    { "<leader>ot", "<cmd>Obsidian today<cr>", desc = "Open Today's note" },
+    { "<leader>oT", "<cmd>Obsidian tomorrow<cr>", desc = "Open Tomorrow's note" },
+    { "<leader>ov", "<cmd>Obsidian tags<cr>", desc = "Open Tags" },
+    { "<leader>oy", "<cmd>Obsidian yesterday<cr>", desc = "Open yesterday's note" },
+    { "<leader>om", "<cmd>Obsidian template<cr>", desc = "Insert template" },
+    { "<leader>ol", "<cmd>Obsidian link<cr>", desc = "Create/Edit link" },
+    { "<leader>of", "<cmd>Obsidian follow<cr>", desc = "Follow link" },
+    { "<leader>oq", "<cmd>Obsidian quick_switch<cr>", desc = "Quick switch" },
+    { "<leader>oe", "<cmd>Obsidian extract_note<cr>", desc = "Extract Note" },
+    { "<leader>oi", "<cmd>Obsidian paste_img<cr>", desc = "Paste Image" },
     { "<leader>oc", ":e ~/.config/nvim/lua/plugins/obsidian.lua<CR>", desc = "Open Obsidian config" },
   },
 }
