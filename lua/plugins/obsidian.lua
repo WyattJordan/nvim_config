@@ -79,7 +79,7 @@ return {
   dependencies = { "nvim-lua/plenary.nvim" },
   -- ft = "markdown",
   lazy = false,
-  enabled = true,
+  enabled = vim.fn.filereadable(vim.fn.expand("$HOME/.config/nvim/.is_server")) == 0,
   opts = {
     -- This override works but not enabling it as all notes should use a template
     -- notes not using a template will be in the root folder (ugly)
