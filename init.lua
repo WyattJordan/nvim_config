@@ -2,6 +2,10 @@
 require("config.lazy")
 vim.opt.wrap = true
 
+-- make window splits more obvious
+vim.opt.fillchars:append({ vert = "┃", horiz = "━" })
+vim.api.nvim_set_hl(0, "WinSeparator", { fg = "#ff0000", bg = "NONE" }) -- Set your desired color
+
 vim.api.nvim_create_autocmd("FileType", {
   pattern = "sh",
   callback = function()
@@ -34,14 +38,14 @@ local is_server_running = vim.uv.fs_stat(godot_project_path .. "/server.pipe")
 if is_godot_project and not is_server_running then
   vim.fn.serverstart(godot_project_path .. "/server.pipe")
 
-    -- setup lsp
-    -- lspconfig.gdscript.setup {}
+  -- setup lsp
+  -- lspconfig.gdscript.setup {}
 end
-  vim.api.nvim_create_autocmd("BufEnter", {
-    callback = function()
-      if vim.v.servername then
-        vim.fn.system("osascript -e 'tell application \"kitty\" to activate'")
-      end
-    end,
-  })
-  -- vim.fn.serverstart("/tmp/server.pipe")
+vim.api.nvim_create_autocmd("BufEnter", {
+  callback = function()
+    if vim.v.servername then
+      vim.fn.system("osascript -e 'tell application \"kitty\" to activate'")
+    end
+  end,
+})
+-- vim.fn.serverstart("/tmp/server.pipe")
