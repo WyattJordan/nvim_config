@@ -123,7 +123,7 @@ return {
     { "<leader>oy", "<cmd>Obsidian yesterday<cr>", desc = "Open yesterday's note" },
     { "<leader>om", "<cmd>Obsidian template<cr>", desc = "Insert template" },
     { "<leader>ol", "<cmd>Obsidian link<cr>", desc = "Create/Edit link" },
-    { "<leader>of", "<cmd>Obsidian follow<cr>", desc = "Follow link" },
+    { "<leader>of", "<cmd>Obsidian follow_link<cr>", desc = "Follow link" },
     { "<leader>oq", "<cmd>Obsidian quick_switch<cr>", desc = "Quick switch" },
     { "<leader>oe", "<cmd>Obsidian extract_note<cr>", desc = "Extract Note" },
     { "<leader>oi", "<cmd>Obsidian paste_img<cr>", desc = "Paste Image" },

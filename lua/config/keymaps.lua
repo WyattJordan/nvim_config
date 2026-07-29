@@ -2,6 +2,19 @@
 -- Default keymaps that are always set: https://github.com/LazyVim/LazyVim/blob/main/lua/lazyvim/config/keymaps.lua
 -- Add any additional keymaps here
 
+vim.api.nvim_create_user_command("PasteHyperlinksAsMarkdown", function()
+  local cmd = [[osascript -e 'the clipboard as «class HTML»' | ]]
+    .. [[perl -ne 'print chr foreach unpack("C*",pack("H*",substr($_,11,-3)))' | ]]
+    .. [[perl -0777 -pe ']]
+    .. [[s/<a\s[^>]*?href="([^"]*)"[^>]*>(.*?)<\/a>/[$2]($1)/gs;]]
+    .. [[s/<br\s*\/?>/\n/gi;]]
+    .. [[s/<\/(?:div|p|li|tr)>/\n/gi;]]
+    .. [[s/<[^>]+>//g;]]
+    .. [[']]
+  local result = vim.fn.system(cmd)
+  vim.api.nvim_put(vim.split(result, "\n"), "c", true, true)
+end, {})
+
 -- local harpoon = require("harpoon")
 --
 -- -- REQUIRED
