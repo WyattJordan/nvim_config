@@ -1,18 +1,18 @@
-return {
-  "3rd/image.nvim",
-  lazy = false,
-  opts = {
-    backend = "kitty",
-    integrations = {
-      markdown = {
-        enabled = true,
-        resolve_image_path = function(document_path, image_path, fallback)
-          if require("obsidian.api").path_is_note(document_path) then
-            return require("obsidian.api").resolve_image_path(image_path)
-          end
-          return fallback(document_path, image_path)
-        end,
-      },
-    },
-  },
-}
+-- return {
+--   "3rd/image.nvim",
+--   lazy = false,
+--   opts = {
+--     backend = "kitty",
+--     integrations = {
+--       markdown = {
+--         enabled = true,
+--         resolve_image_path = function(document_path, image_path, fallback)
+--           if require("obsidian.api").path_is_note(document_path) then
+--             return require("obsidian.api").resolve_image_path(image_path)
+--           end
+--           return fallback(document_path, image_path)
+--         end,
+--       },
+--     },
+--   },
+-- }

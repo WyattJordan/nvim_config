@@ -1,0 +1,32 @@
+return {
+    "nvim-treesitter/nvim-treesitter",
+    build = ":TSUpdate",
+    opts = function(_, opts)
+      -- Add your desired parsers to the existing list
+      if type(opts.ensure_installed) == "table" then
+        vim.list_extend(opts.ensure_installed, {
+          "rust",
+          "markdown",
+          "markdown_inline",
+        })
+      end
+    end,
+    config = function()
+        require("nvim-treesitter.configs").setup({
+            ensure_installed = {
+                "vimdoc",
+                "lua",
+                "java",
+                "typescript",
+            },
+            sync_install = false,
+            auto_install = true,
+            indent = {
+                enable = true
+            },
+            highlight = {
+                enable = true,
+            },
+        })
+    end
+}
