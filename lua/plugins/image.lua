@@ -1,3 +1,8 @@
+-- Disabled: image.nvim needs a kitty/ueberzug-capable terminal.
+-- lazy.nvim requires every file under lua/plugins to return a spec table,
+-- so return an empty one rather than nil while the config below is parked.
+return {}
+
 -- return {
 --   "3rd/image.nvim",
 --   lazy = false,
