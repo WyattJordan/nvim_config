@@ -2,6 +2,25 @@
 -- Default keymaps that are always set: https://github.com/LazyVim/LazyVim/blob/main/lua/lazyvim/config/keymaps.lua
 -- Add any additional keymaps here
 
+-- Copy buffer path components to the system clipboard
+vim.keymap.set("n", "<leader>yd", function()
+  local dir = vim.fn.expand("%:p:h")
+  vim.fn.setreg("+", dir)
+  vim.notify(dir, vim.log.levels.INFO, { title = "Copied directory" })
+end, { desc = "Copy directory to clipboard" })
+
+vim.keymap.set("n", "<leader>yp", function()
+  local path = vim.fn.expand("%:p")
+  vim.fn.setreg("+", path)
+  vim.notify(path, vim.log.levels.INFO, { title = "Copied path" })
+end, { desc = "Copy full path to clipboard" })
+
+vim.keymap.set("n", "<leader>yf", function()
+  local name = vim.fn.expand("%:t")
+  vim.fn.setreg("+", name)
+  vim.notify(name, vim.log.levels.INFO, { title = "Copied filename" })
+end, { desc = "Copy filename to clipboard" })
+
 vim.api.nvim_create_user_command("PasteHyperlinksAsMarkdown", function()
   local cmd = [[osascript -e 'the clipboard as «class HTML»' | ]]
     .. [[perl -ne 'print chr foreach unpack("C*",pack("H*",substr($_,11,-3)))' | ]]
