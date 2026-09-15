@@ -16,6 +16,15 @@ vim.api.nvim_create_autocmd("FileType", {
   end,
 })
 
+vim.api.nvim_create_autocmd("VimLeavePre", {
+  pattern = "*",
+  callback = function()
+    if vim.g.savesession then
+      vim.api.nvim_command("mks!")
+    end
+  end
+})
+
 -- Nvim as godot editor with server pipe file
 -- copied from: https://simondalvai.org/blog/godot-neovim/
 local paths_to_check = { "/", "/../" }

@@ -1,39 +1,56 @@
 -- rust-analyzer for Brazil / CargoBrazil packages.
 --
--- Why this is needed: CargoBrazil regenerates `rust-toolchain.toml` to point
--- at a custom toolchain (build/private/cargo-brazil-toolchain) that ships no
--- rust-analyzer and no rust-src. The `rust-analyzer` on PATH is a rustup proxy
--- that then errors out. So we:
---   * run the Amazon-built rust-analyzer from toolbox (matches Brazil's rustc
---     ABI for proc-macros),
---   * put the Brazil toolchain's bin/ first on rust-analyzer's cargo PATH so
---     `cargo metadata` and `cargo clippy` run through Brazil's cargo wrapper
---     (which knows about the offline registry and internal dependencies —
---     the plain rustup cargo cannot resolve `amzn-*` crates from crates.io),
---   * point stdlib sources at a user rustup toolchain matching Brazil's rustc
---     version (1.96.0), since the Brazil toolchain has no rust-src, and
---   * give rust-analyzer its own cargo target dir so its `cargo check`
---     artifacts don't collide with `brazil-build` output (different rustc
---     -> incompatible proc-macro ABI).
+-- Why this is needed: CargoBrazil regenerates `rust-toolchain.toml` to point at
+-- a custom toolchain (build/private/cargo-brazil-toolchain) that ships no
+-- rust-analyzer and no rust-src, and vendors deps into an offline local-registry
+-- a plain cargo doesn't know about. The approach that actually works:
+--
+--   * Run the Amazon-built rust-analyzer from toolbox (its rustc matches
+--     Brazil's, so proc-macro .so ABI checks pass).
+--   * Put Brazil's toolchain bin/ FIRST on rust-analyzer's PATH. Brazil's
+--     `cargo`/`rustc` are self-configuring shims: they locate their own
+--     CARGO_HOME (with the crates.io -> offline local-registry source
+--     replacement that resolves internal `amzn-*` crates) and their own
+--     sysroot. This is how the team's VSCode setup works too.
+--   * Do NOT set cargo.sysroot. Doing so makes rust-analyzer inject
+--     RUSTUP_TOOLCHAIN / RUSTUP_HOME pointing at ~/.rustup into every cargo
+--     call, and Brazil's rustc shim then panics ("Brazil Rustup called with
+--     RUSTUP_HOME set to non-Brazil Rustup directory"). We only set
+--     sysrootSrc -- the stdlib *source* path for std/core hover & goto -- which
+--     does not trigger that injection. rust-src comes from a user rustup
+--     toolchain matching Brazil's rustc version (Brazil's has none).
+--   * Pin cargo.target to the host triple. Brazil only vendors crates its real
+--     build needs, so platform-gated deps (e.g. android_system_properties via
+--     chrono -> iana-time-zone) are absent from the registry. Without a target
+--     filter, `cargo metadata` resolves the all-platforms graph and fails
+--     fetching those. Filtering to the host prunes them.
+--   * Give rust-analyzer its own target dir so its check artifacts don't
+--     collide with brazil-build output (different rustc -> proc-macro ABI).
+--
+-- Requires (one-time):
+--   toolbox registry add s3://buildertoolbox-registry-bt-rust-registry-us-west-2/tools.json
+--   toolbox install --channel head rust-analyzer
+--   rustup toolchain install 1.96.0 --profile minimal --component rust-src
+-- and a completed `brazil-build` in the package (populates the offline registry
+-- and toolchain). If rust-analyzer later errors about a missing crate, re-run
+-- `brazil-build sync`.
 --
 -- Version bump: if `build/private/cargo-brazil-toolchain/bin/rustc --version`
 -- changes, run `rustup toolchain install <ver> --profile minimal --component
 -- rust-src` and update `brazil_rustc_version` below.
 local brazil_rustc_version = "1.96.0"
-local rustup_toolchain = vim.fn.expand("~/.rustup/toolchains/" .. brazil_rustc_version .. "-x86_64-unknown-linux-gnu")
+local host_target = "x86_64-unknown-linux-gnu"
+local rust_src = vim.fn.expand("~/.rustup/toolchains/" .. brazil_rustc_version .. "-" .. host_target)
+  .. "/lib/rustlib/src/rust/library"
 
--- Find the Brazil toolchain bin/ dir relative to the current file. Walks up
--- from the buffer until it hits a directory containing
--- `build/private/cargo-brazil-toolchain/bin`, so this works in any brazil
--- workspace, not just the current one.
-local function brazil_toolchain_bin()
-  local start = vim.fn.expand("%:p:h")
-  if start == "" then start = vim.fn.getcwd() end
-  local pkg_root = vim.fs.find({ "Cargo.toml", "Config" }, { upward = true, path = start })[1]
+-- Brazil's toolchain bin/ for the package owning `path`, or nil outside a built
+-- Brazil package (config then degrades to a plain rust-analyzer). Walk up to the
+-- package root and check for the generated toolchain.
+local function brazil_toolchain_bin(path)
+  local pkg_root = vim.fs.find({ "Config", "Cargo.toml" }, { upward = true, path = path })[1]
   if not pkg_root then return nil end
-  local root = vim.fs.dirname(pkg_root)
-  local candidate = root .. "/build/private/cargo-brazil-toolchain/bin"
-  if vim.uv.fs_stat(candidate) then return candidate end
+  local bin = vim.fs.dirname(pkg_root) .. "/build/private/cargo-brazil-toolchain/bin"
+  if vim.uv.fs_stat(bin) then return bin end
   return nil
 end
 
@@ -51,54 +68,21 @@ return {
         -- Amazon-built rust-analyzer (bt-rust), installed via toolbox. Point
         -- at the absolute path so the rustup proxy on PATH can't intercept.
         cmd = { vim.fn.expand("~/.toolbox/bin/rust-analyzer") },
-        default_settings = {
-          ["rust-analyzer"] = {
-            cargo = {
-              sysroot = rustup_toolchain,
-              sysrootSrc = rustup_toolchain .. "/lib/rustlib/src/rust/library",
-              targetDir = true,
-              -- Force rust-analyzer to invoke the Brazil-provided `cargo`
-              -- rather than the rustup proxy at ~/.cargo/bin/cargo. The
-              -- rustup proxy uses public crates.io and fails to resolve
-              -- internal `amzn-*` crates.
-              cargoPath = (function()
-                local bin = brazil_toolchain_bin()
-                if bin then return bin .. "/cargo" end
-                return nil
-              end)(),
-              -- Also prepend the toolchain bin/ to PATH so any subprocess
-              -- (proc-macro server, cargo-clippy, etc.) uses Brazil binaries.
-              extraEnv = (function()
-                local bin = brazil_toolchain_bin()
-                if bin then return { PATH = bin .. ":" .. (vim.env.PATH or "") } end
-                return nil
-              end)(),
-            },
-            check = {
-              -- Same story for `cargo check` / clippy driving the diagnostics.
-              -- Point at Brazil's cargo binary explicitly and let it call
-              -- Brazil's clippy driver via the PATH we set above.
-              command = "clippy",
-              extraEnv = (function()
-                local bin = brazil_toolchain_bin()
-                if bin then return { PATH = bin .. ":" .. (vim.env.PATH or "") } end
-                return nil
-              end)(),
-              overrideCommand = (function()
-                local bin = brazil_toolchain_bin()
-                if not bin then return nil end
-                return {
-                  bin .. "/cargo",
-                  "clippy",
-                  "--workspace",
-                  "--message-format=json-diagnostic-rendered-ansi",
-                  "--all-targets",
-                  "--keep-going",
-                }
-              end)(),
-            },
-          },
-        },
+        -- settings is evaluated per-project with the resolved project root, so
+        -- the Brazil toolchain PATH tracks whichever brazil package a file
+        -- belongs to when editing across several in one session.
+        settings = function(project_root)
+          local cargo = {
+            sysrootSrc = rust_src,
+            target = host_target,
+            targetDir = true,
+          }
+          local bin = brazil_toolchain_bin(project_root)
+          if bin then
+            cargo.extraEnv = { PATH = bin .. ":" .. (vim.env.PATH or "") }
+          end
+          return { ["rust-analyzer"] = { cargo = cargo } }
+        end,
       },
     }
   end,
